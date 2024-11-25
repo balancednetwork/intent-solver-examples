@@ -1,24 +1,19 @@
-# Turborepo starter
+# Intents Solver SDK examples
 
-This is an official starter Turborepo.
+This repository contains examples (React) on how to use SDK in your dApp.
 
-## Using this example
+Since SDK is not yet published on npm, you need to set path to it in `apps/react-example` `package.json` dependencies:
+`"balanced-solver-sdk": "file:<path to sdk repository>",`
 
-Run the following command:
+Checkout [Balanced Network Intents SDK package](https://github.com/balancednetwork/balanced-network-interface/tree/master/packages/intents-sdk)
+for more information.
 
-```sh
-npx create-turbo@latest
-```
-
-## What's inside?
-
-This Turborepo includes the following packages/apps:
+SDK is still in alpha phase and is subject to change.
 
 ### Apps and Packages
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
+- `react-example`: React dApp
+- `@repo/ui`: a stub React component library
 - `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
 - `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
