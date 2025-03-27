@@ -1,5 +1,5 @@
 import React from "react";
-import {EvmProvider} from "balanced-solver-sdk";
+import {EvmProvider} from "icon-intents-sdk";
 import {useConnect, useSwitchChain} from "wagmi";
 import { injected } from 'wagmi/connectors'
 import {useMultiWallet} from "@/contexts/MultiWalletContext";

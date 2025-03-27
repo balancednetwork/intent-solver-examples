@@ -3,7 +3,7 @@
 This repository contains examples (React) on how to use SDK in your dApp.
 
 Since SDK is not yet published on npm, you need to set path to it in `apps/react-example` `package.json` dependencies:
-`"balanced-solver-sdk": "file:<path to sdk repository>",`
+`"icon-intents-sdk": "file:<path to sdk repository>",`
 
 Checkout [Balanced Network Intents SDK package](https://github.com/balancednetwork/balanced-network-interface/tree/master/packages/intents-sdk)
 for more information.
@@ -13,9 +13,7 @@ SDK is still in alpha phase and is subject to change.
 ### Apps and Packages
 
 - `react-example`: React dApp
-- `@repo/ui`: a stub React component library
 - `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
 
 Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
 

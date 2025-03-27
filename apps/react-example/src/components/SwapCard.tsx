@@ -7,11 +7,10 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ChainName,
-  IntentService,
   Token,
   CreateIntentOrderPayload,
-  EvmChainConfig, SuiChainConfig, IntentQuoteResponse, isEvmChainConfig, EvmProvider, SuiProvider
-} from "balanced-solver-sdk";
+  EvmChainConfig, SuiChainConfig, IntentQuoteResponse, isEvmChainConfig, EvmProvider, ChainConfig
+} from "icon-intents-sdk";
 import {SelectChain} from "@/components/SelectChain";
 import {calculateExchangeRate, normaliseTokenAmount, scaleTokenAmount} from "@/lib/utils";
 import {Address} from "viem";
@@ -24,27 +23,26 @@ import {
   DialogTrigger
 } from "@/components/ui/dialog";
 import BigNumber from "bignumber.js";
+import {intentService} from "@/lib/constants";
+import {useMultiWallet} from "@/contexts/MultiWalletContext";
 
-const supportedChains = IntentService.getSupportedChains();
+const supportedChains = intentService.getSupportedChains();
 const supportedTokensPerChain: Map<ChainName, Token[]>= new Map(
   supportedChains.map(chain => {
-    return [chain, IntentService.getChainConfig(chain).supportedTokens]
+    return [chain, intentService.getChainConfig(chain).supportedTokens]
   })
 )
 
 
 export default function SwapCard(
   {
-    evmProvider,
-    suiProvider,
     setTaskId,
   }: {
-    evmProvider: EvmProvider,
-    suiProvider: SuiProvider,
     setTaskId: (value: SetStateAction<string | undefined>) => void,
   }) {
-  const defaultSourceChain: EvmChainConfig = IntentService.getChainConfig("arb");
-  const defaultDestChain: SuiChainConfig = IntentService.getChainConfig("sui");
+  const { getConnectedWalletAddress, getProvider } = useMultiWallet();
+  const defaultSourceChain: ChainConfig = intentService.getChainConfig("icon");
+  const defaultDestChain: ChainConfig = intentService.getChainConfig("arb");
   const [sourceChain, setSourceChain] = useState<ChainName>(defaultSourceChain.chain.name)
   const [destChain, setDestChain] = useState<ChainName>(defaultDestChain.chain.name)
   const [sourceToken, setSourceToken] = useState<Token>(defaultSourceChain.supportedTokens[0]!)
@@ -65,16 +63,17 @@ export default function SwapCard(
   const getQuote = async (value: string) => {
     setSourceAmount(value);
 
-    const quoteResult = await IntentService.getQuote({
+    const quoteResult = await intentService.getQuote({
       token_src: sourceToken.address,
-      token_src_blockchain_id: IntentService.getChainConfig(sourceChain).nid,
+      token_src_blockchain_id: intentService.getChainConfig(sourceChain).nid,
       token_dst: destToken.address,
-      token_dst_blockchain_id: IntentService.getChainConfig(destChain).nid,
-      src_amount: scaleTokenAmount(value, sourceToken.decimals)
+      token_dst_blockchain_id: intentService.getChainConfig(destChain).nid,
+      amount: scaleTokenAmount(value, sourceToken.decimals),
+      quote_type: "exact_input"
     });
 
     if (quoteResult.ok) {
-      setExchangeRate(calculateExchangeRate(new BigNumber(value), new BigNumber(normaliseTokenAmount(quoteResult.value.output.expected_output, destToken.decimals))))
+      setExchangeRate(calculateExchangeRate(new BigNumber(value), new BigNumber(normaliseTokenAmount(quoteResult.value.quoted_amount, destToken.decimals))))
       setQuote(quoteResult.value);
     } else {
      console.error(quoteResult.error.detail.message);
@@ -88,15 +87,15 @@ export default function SwapCard(
     }
 
     setIntentOrderPayload({
-      "quote_uuid": quote.output.uuid,
-      "fromAddress": sourceChain === "arb" ? evmProvider.walletClient.account.address : suiProvider.account.address, // address we are sending funds from (fromChain)
-      "toAddress": destChain === "arb" ? evmProvider.walletClient.account.address : suiProvider.account.address, // destination address where funds are transfered to (toChain)
+      "quote_uuid": quote.uuid,
+      "fromAddress": getConnectedWalletAddress(sourceChain), // address we are sending funds from (fromChain)
+      "toAddress": getConnectedWalletAddress(destChain), // destination address where funds are transfered to (toChain)
       "fromChain": sourceChain, // ChainName
       "toChain": destChain, // ChainName
       "token": sourceToken.address,
       "amount":  BigInt(scaleTokenAmount(sourceAmount, sourceToken.decimals)),
       "toToken": destToken.address,
-      "toAmount": quote.output.expected_output,
+      "toAmount": quote.quoted_amount,
     });
   }
 
@@ -106,7 +105,7 @@ export default function SwapCard(
       return;
     }
 
-    const sourceChainWalletProvider = sourceChain === "arb" ? evmProvider : suiProvider;
+    const sourceChainWalletProvider = getProvider(sourceChain);
 
     if (!sourceChainWalletProvider) {
       console.error("No provider set");
@@ -118,47 +117,44 @@ export default function SwapCard(
     console.log("Checking allowance..");
 
     // checks if token transfer amount is approved (required for EVM, can be skipped for SUI - defaults to true)
-    const isAllowanceValid = await IntentService.isAllowanceValid(intentOrderPayload, sourceChainWalletProvider);
+    const isAllowanceValid = await intentService.isAllowanceValid(intentOrderPayload, sourceChainWalletProvider);
 
     console.log("isAllowanceValid passed..")
 
     if (isAllowanceValid.ok) {
       if (!isAllowanceValid.value) {
         console.log("Token allowance not valid");
-        const sourceChainConfig = IntentService.getChainConfig(sourceChain);
-        const intentContractAddress = isEvmChainConfig(sourceChainConfig) ? sourceChainConfig.intentContract : sourceChainConfig.packageId;
+        const sourceChainConfig = intentService.getChainConfig(sourceChain);
+        if (sourceChainWalletProvider instanceof EvmProvider && isEvmChainConfig(sourceChainConfig)) {
+          const intentContractAddress = sourceChainConfig.intentContract;
 
-        if (!evmProvider) {
-          console.error("Evm provider not set")
-          return;
-        }
-
-        // allowance invalid, prompt approval
-        const approvalResult = await IntentService.approve(
-          sourceToken.address as Address,
-          sourceTokenAmount,
-          intentContractAddress as Address,
-          evmProvider
+          // allowance invalid, prompt approval
+          const approvalResult = await intentService.approve(
+            sourceToken.address as Address,
+            sourceTokenAmount,
+            intentContractAddress as Address,
+            sourceChainWalletProvider
           );
 
-        if (approvalResult.ok) {
-          console.log("Approval successful. Executing intent order..");
-          const executionResult = await IntentService.executeIntentOrder(intentOrderPayload, sourceChainWalletProvider);
+          if (approvalResult.ok) {
+            console.log("Approval successful. Executing intent order..");
+            const executionResult = await intentService.executeIntentOrder(intentOrderPayload, sourceChainWalletProvider);
 
-          if (executionResult.ok) {
-            console.log("Execution result: ", executionResult);
+            if (executionResult.ok) {
+              console.log("Execution result: ", executionResult);
 
-            setTaskId(executionResult.value.task_id)
+              setTaskId(executionResult.value.task_id)
+            } else {
+              // handle error
+            }
           } else {
             // handle error
           }
-        } else {
-          // handle error
         }
       } else {
         // token allowance is valid
         console.log(`Allowance valid. Executing intent order: ${JSON.stringify(intentOrderPayload)}`);
-        const executionResult = await IntentService.executeIntentOrder(intentOrderPayload, sourceChainWalletProvider);
+        const executionResult = await intentService.executeIntentOrder(intentOrderPayload, sourceChainWalletProvider);
 
         if (executionResult.ok) {
           console.log("Execution result: ", executionResult);
@@ -215,7 +211,7 @@ export default function SwapCard(
               <SelectValue placeholder="Token"/>
             </SelectTrigger>
             <SelectContent>
-              {supportedTokensPerChain.get(sourceChain)!.map((token) => (
+              {supportedTokensPerChain.get(sourceChain)?.map((token) => (
                 <SelectItem key={token.address} value={token.symbol}>
                   {token.symbol}
                 </SelectItem>
@@ -229,7 +225,7 @@ export default function SwapCard(
             id="fromAddress"
             type="text"
             placeholder="0.0"
-            value={suiProvider.account.address}
+            value={getConnectedWalletAddress(sourceChain)}
             disabled={true}
           />
         </div>
@@ -253,7 +249,7 @@ export default function SwapCard(
             <Input
               type="number"
               placeholder="0.0"
-              value={quote ? normaliseTokenAmount(quote?.output.expected_output, destToken.decimals) : ""}
+              value={quote ? normaliseTokenAmount(quote?.quoted_amount, destToken.decimals) : ""}
               readOnly
             />
           </div>
@@ -276,7 +272,7 @@ export default function SwapCard(
           <Input
             id="toAddress"
             type="text"
-            value={evmProvider.walletClient.account.address}
+            value={getConnectedWalletAddress(destChain)}
             disabled={true}
           />
         </div>

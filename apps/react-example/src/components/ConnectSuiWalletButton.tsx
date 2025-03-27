@@ -3,7 +3,7 @@ import {Button} from "@/components/ui/button";
 import {useMultiWallet} from "@/contexts/MultiWalletContext";
 import {useConnectWallet, useWallets} from "@mysten/dapp-kit";
 import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
-import {SuiProvider} from "balanced-solver-sdk";
+import {SuiProvider} from "icon-intents-sdk";
 
 export default function ConnectSuiWalletButton() {
   const { setSuiProvider } = useMultiWallet()

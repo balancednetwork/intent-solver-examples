@@ -2,7 +2,7 @@
 
 import React from "react";
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from "@/components/ui/select";
-import {ChainName} from "balanced-solver-sdk";
+import {ChainName} from "icon-intents-sdk";
 import {SetStateAction} from "react";
 import {Label} from "@/components/ui/label";
 

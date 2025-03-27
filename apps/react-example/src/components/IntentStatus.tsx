@@ -1,8 +1,8 @@
 import React, {useState} from "react"
 import {useQuery} from "@tanstack/react-query";
-import {IntentService} from "balanced-solver-sdk";
-import type {IntentErrorResponse, IntentStatusResponse, Result} from "balanced-solver-sdk/dist/types";
+import type {IntentErrorResponse, IntentStatusResponse, Result} from "icon-intents-sdk";
 import {statusCodeToMessage} from "@/lib/utils";
+import {intentService} from "@/lib/constants";
 
 export default function IntentStatus(
   {
@@ -16,7 +16,7 @@ export default function IntentStatus(
   useQuery({
     queryKey: [task_id],
     queryFn: async () => {
-      const intentResult = await IntentService.getStatus({ task_id});
+      const intentResult = await intentService.getStatus({ task_id});
       setStatus(intentResult)
 
       return intentResult
