@@ -29,7 +29,7 @@
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "4.2.1",
-    "icon-intents-sdk": "1.0.0",
+    "icon-intents-sdk": "file:/home/gatsby/projects/v23/intent-sdk",
     "bignumber.js": "^9.1.2",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
