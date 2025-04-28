@@ -29,7 +29,6 @@ export default function ConnectStellarWalletButton() {
                         signTransaction: signTransaction
                     }
                 });
-                console.log({addressResult, provider})
                 //With private key
                 // const provider = new StellarProvider({
                 //     sorobanUrl: "https://stellar-soroban-public.nodies.app",
