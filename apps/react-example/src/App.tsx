@@ -11,7 +11,7 @@ import IntentStatus from "@/components/IntentStatus";
 function App() {
   const { evmProvider, suiProvider, iconProvider, stellarProvider } = useMultiWallet();
   const [taskId, setTaskId] = useState<string | undefined>(undefined);
-  const providers = [evmProvider, suiProvider, iconProvider, stellarProvider];
+  const providers = [suiProvider, iconProvider, stellarProvider];
 
   return (<div className="flex items-center content-center justify-center h-screen w-screen">
     <div className="flex flex-col flex items-center content-center justify-center">

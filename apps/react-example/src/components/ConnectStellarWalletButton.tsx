@@ -12,20 +12,33 @@ export default function ConnectStellarWalletButton() {
                 alert("Stellar wallet not found! Please install a compatible wallet.");
                 return;
             }
-
             const addressResult = await (window as any).hanaWallet.stellar.getPublicKey();
-            console.log({addressResult}, '<<<<STELLAR ADDRESS RESULT');
-            if (addressResult && addressResult.length > 0) {
+            if (addressResult) {
+                const signTransaction = async (tx) => {
+                    const signedTx = await (window as any).hanaWallet.stellar.signTransaction(tx);
+                    return signedTx;
+                }
+                //With Wallet provider
                 const provider = new StellarProvider({
-                    sorobanUrl: "https://mainnet.sorobanrpc.com",
-                    networkPassphrase: "Public Global Stellar Network ; September 2015",
+                    sorobanUrl: "https://stellar-soroban-public.nodies.app",
+                    networkPassphrase: 'Public Global Stellar Network ; September 2015',
                     wallet: {
                         address: addressResult,
-                        getAddress: () => addressResult,
-                        // privateKey: "", // Set private key for now, signing from wallet seems not working
                     },
-                    provider: (window as any).hanaWallet.stellar
+                    provider: {
+                        signTransaction: signTransaction
+                    }
                 });
+                console.log({addressResult, provider})
+                //With private key
+                // const provider = new StellarProvider({
+                //     sorobanUrl: "https://stellar-soroban-public.nodies.app",
+                //     networkPassphrase: 'Public Global Stellar Network ; September 2015',
+                //     wallet: {
+                //         address: addressResult,
+                //         privateKey: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", // You can set the private key if needed
+                //     },
+                // });
 
                 setStellarProvider(provider);
                 console.log("Stellar wallet connected successfully!");
